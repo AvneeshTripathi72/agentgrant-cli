@@ -28,7 +28,7 @@ def grant_list(
 ) -> None:
     """List grants with filtering."""
     client = APIClient(app.settings.api_base_url, app.settings.api_key)
-    params = {"page": page_number, "limit": limit}
+    params: dict[str, object] = {"page": page_number, "limit": limit}
     if status:
         params["status"] = status
     if user:
