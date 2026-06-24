@@ -7,8 +7,9 @@ from pathlib import Path
 
 import click
 
-from agentgrant.clients.api_client import APIClient
+from agentgrant.commands._shared import create_api_client
 from agentgrant.core.context import AppContext, pass_context
+from agentgrant.core.exceptions import AgentGrantError
 
 
 def checkmark(value: bool) -> str:
@@ -30,10 +31,10 @@ def doctor_command(app: AppContext) -> None:
     }
     api_ok = False
     try:
-        client = APIClient(app.settings.api_base_url, app.settings.api_key)
+        client = create_api_client(app)
         app.run(client.get("/health"))
         api_ok = True
-    except Exception:
+    except AgentGrantError:
         api_ok = False
 
     payload = [

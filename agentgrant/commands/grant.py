@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import click
 
-from agentgrant.clients.api_client import APIClient
+from agentgrant.commands._shared import create_api_client
 from agentgrant.core.context import AppContext, pass_context
 from agentgrant.models.grant import Grant, GrantListResponse
 from agentgrant.utils.formatter import to_serializable_list
@@ -27,7 +27,7 @@ def grant_list(
     user: str | None,
 ) -> None:
     """List grants with filtering."""
-    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    client = create_api_client(app)
     params: dict[str, object] = {"page": page_number, "limit": limit}
     if status:
         params["status"] = status
@@ -74,6 +74,6 @@ def grant_list(
 @pass_context
 def grant_revoke(app: AppContext, grant_id: str) -> None:
     """Revoke a grant."""
-    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    client = create_api_client(app)
     payload = app.run(client.delete(f"/grants/{grant_id}"))
     app.printer.emit(payload, title=f"Grant {grant_id} revoked")

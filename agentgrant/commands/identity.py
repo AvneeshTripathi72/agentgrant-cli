@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import click
 
-from agentgrant.clients.api_client import APIClient
+from agentgrant.commands._shared import create_api_client
 from agentgrant.core.context import AppContext, pass_context
 from agentgrant.models.identity import Identity, IdentityListResponse
 from agentgrant.utils.formatter import to_serializable_list
@@ -18,7 +18,7 @@ def identity_group() -> None:
 @pass_context
 def identity_get(app: AppContext, identity_id: str) -> None:
     """Fetch one identity."""
-    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    client = create_api_client(app)
     payload = app.run(client.get(f"/identities/{identity_id}"))
     identity = Identity.model_validate(payload)
     app.printer.emit(identity.model_dump(mode="json"), title=f"Identity {identity_id}")
@@ -28,7 +28,7 @@ def identity_get(app: AppContext, identity_id: str) -> None:
 @pass_context
 def identity_list(app: AppContext) -> None:
     """List identities."""
-    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    client = create_api_client(app)
     payload = app.run(client.get("/identities"))
     data = payload if isinstance(payload, dict) else {"items": payload}
     identities = IdentityListResponse.model_validate(data)

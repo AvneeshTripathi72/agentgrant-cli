@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import click
 
-from agentgrant.clients.docs_client import DocsClient
-from agentgrant.core.cache_manager import CacheManager
+from agentgrant.commands._shared import create_docs_client
 from agentgrant.core.context import AppContext, pass_context
 
 
@@ -12,11 +11,7 @@ from agentgrant.core.context import AppContext, pass_context
 @pass_context
 def search_command(app: AppContext, query: str) -> None:
     """Search documentation."""
-    client = DocsClient(
-        app.settings.docs_base_url,
-        cache=CacheManager(app.settings.cache_dir),
-        use_cache=not app.no_cache,
-    )
+    client = create_docs_client(app)
     results = app.run(client.search(query))
     payload = [
         {

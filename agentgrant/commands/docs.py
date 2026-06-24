@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import click
 
-from agentgrant.clients.docs_client import DocsClient
-from agentgrant.core.cache_manager import CacheManager
+from agentgrant.commands._shared import create_docs_client
 from agentgrant.core.context import AppContext, pass_context
 from agentgrant.utils.formatter import to_serializable_list
 
@@ -12,11 +11,7 @@ from agentgrant.utils.formatter import to_serializable_list
 @pass_context
 def docs_command(app: AppContext) -> None:
     """Fetch llms.txt and display documentation pages."""
-    client = DocsClient(
-        app.settings.docs_base_url,
-        cache=CacheManager(app.settings.cache_dir),
-        use_cache=not app.no_cache,
-    )
+    client = create_docs_client(app)
     pages = app.run(client.fetch_pages())
     payload = to_serializable_list(pages)
     if app.printer.json_output:

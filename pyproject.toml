@@ -10,9 +10,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
-  { name = "Avneesh Kumar Tripathi" }
+  { name = "Avneesh Kumar Tripathi", email = "avanishtripathiavanish79921170@gmail.com" }
+]
+maintainers = [
+  { name = "Avneesh Kumar Tripathi", email = "avanishtripathiavanish79921170@gmail.com" }
 ]
 keywords = ["cli", "jwt", "grants", "httpx", "click", "rich"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Utilities",
+]
 dependencies = [
   "black>=24.4.2",
   "click>=8.1.7",
@@ -37,6 +50,12 @@ dev = [
 
 [project.scripts]
 agentgrant = "agentgrant.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/AvneeshTripathi72/agentgrant-cli"
+Repository = "https://github.com/AvneeshTripathi72/agentgrant-cli"
+Issues = "https://github.com/AvneeshTripathi72/agentgrant-cli/issues"
+Documentation = "https://github.com/AvneeshTripathi72/agentgrant-cli#readme"
 
 [tool.hatch.build.targets.wheel]
 packages = ["agentgrant"]

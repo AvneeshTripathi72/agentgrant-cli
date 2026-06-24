@@ -18,3 +18,15 @@ def test_verify_token_fails_on_wrong_secret() -> None:
 
     with pytest.raises(TokenError):
         verify_token(token, secret="y" * 32, algorithm="HS256")
+
+
+def test_decode_and_verify_token_from_file(tmp_path) -> None:
+    token = jwt.encode({"sub": "user123"}, "x" * 32, algorithm="HS256")
+    token_path = tmp_path / "token.jwt"
+    token_path.write_text(token, encoding="utf-8")
+
+    decoded = decode_token(str(token_path))
+    verified = verify_token(str(token_path), secret="x" * 32, algorithm="HS256")
+
+    assert decoded.claims["sub"] == "user123"
+    assert verified.valid is True

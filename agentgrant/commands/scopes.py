@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import click
 
-from agentgrant.clients.api_client import APIClient
+from agentgrant.commands._shared import create_api_client
 from agentgrant.core.context import AppContext, pass_context
 from agentgrant.models.scope import Scope
 from agentgrant.utils.formatter import to_serializable_list
@@ -15,7 +15,7 @@ from agentgrant.utils.validators import validate_output_format
 def scopes_command(app: AppContext, output: str) -> None:
     """List scopes."""
     validate_output_format(output)
-    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    client = create_api_client(app)
     payload = app.run(client.get("/scopes"))
     raw_items = payload if isinstance(payload, list) else payload.get("items", [])
     scopes = [Scope.model_validate(item) for item in raw_items]
