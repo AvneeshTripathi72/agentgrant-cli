@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import cast
 
 import jwt
 from jwt import PyJWTError
+from jwt.types import Options
 
 from agentgrant.core.exceptions import TokenError
 from agentgrant.models.token import TokenPayload
@@ -35,7 +36,7 @@ def verify_token(
     audience: str | None = None,
 ) -> TokenPayload:
     token = read_token(token_input)
-    options: dict[str, Any] = {"verify_signature": True, "verify_exp": True}
+    options = cast(Options, {"verify_signature": True, "verify_exp": True})
     try:
         claims = jwt.decode(
             token,

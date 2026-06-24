@@ -3,10 +3,13 @@ from __future__ import annotations
 import re
 from urllib.parse import urljoin, urlparse
 
+from pydantic import HttpUrl, TypeAdapter
+
 from agentgrant.models.docs import DocsPage
 
 LINK_PATTERN = re.compile(r"^\s*(?:[-*]\s+)?\[([^\]]+)\]\(([^)]+)\)(?:\s*-\s*(.+))?\s*$")
 URL_PATTERN = re.compile(r"^\s*(https?://\S+)\s*$")
+HTTP_URL_ADAPTER = TypeAdapter(HttpUrl)
 
 
 def parse_llms_text(llms_text: str, docs_base_url: str) -> list[DocsPage]:
@@ -31,8 +34,9 @@ def parse_llms_text(llms_text: str, docs_base_url: str) -> list[DocsPage]:
         slug = urlparse(absolute_url).path.rstrip("/").split("/")[-1] or title.casefold().replace(
             " ", "-"
         )
+        validated_url = HTTP_URL_ADAPTER.validate_python(absolute_url)
         if absolute_url in seen:
             continue
         seen.add(absolute_url)
-        pages.append(DocsPage(title=title, slug=slug, url=absolute_url, description=description))
+        pages.append(DocsPage(title=title, slug=slug, url=validated_url, description=description))
     return pages
