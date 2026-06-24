@@ -139,6 +139,20 @@ agentgrant scopes
 agentgrant token decode token.jwt
 ```
 
+## Examples
+
+The repository includes small command examples in:
+
+```text
+examples/
+```
+
+Current example file:
+
+```text
+examples/docs.txt
+```
+
 ## Commands
 
 ### Root help
