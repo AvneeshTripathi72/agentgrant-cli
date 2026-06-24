@@ -1,0 +1,4 @@
+agentgrant docs
+agentgrant search scopes
+agentgrant page trust-registry
+

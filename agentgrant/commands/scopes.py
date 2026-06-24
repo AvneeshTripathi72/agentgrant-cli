@@ -1,19 +1,30 @@
 from __future__ import annotations
 
-from agentgrant.utils.http_client import AgentGrantClient
-from agentgrant.utils.printer import Printer
+import click
+
+from agentgrant.clients.api_client import APIClient
+from agentgrant.core.context import AppContext, pass_context
+from agentgrant.models.scope import Scope
+from agentgrant.utils.formatter import to_serializable_list
+from agentgrant.utils.validators import validate_output_format
 
 
-async def render_scopes(client: AgentGrantClient, printer: Printer) -> None:
-    payload = await client.get("/scopes")
-    if printer.json_output:
-        printer.print_json(payload)
+@click.command("scopes")
+@click.option("--output", default="table", show_default=True, help="table, json, yaml, or csv")
+@pass_context
+def scopes_command(app: AppContext, output: str) -> None:
+    """List scopes."""
+    validate_output_format(output)
+    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    payload = app.run(client.get("/scopes"))
+    raw_items = payload if isinstance(payload, list) else payload.get("items", [])
+    scopes = [Scope.model_validate(item) for item in raw_items]
+    data = to_serializable_list(scopes)
+    if output == "table" and not app.printer.json_output:
+        app.printer.table(
+            "Scopes",
+            ["name", "description"],
+            [[item["name"], item.get("description", "")] for item in data],
+        )
         return
-
-    items = payload if isinstance(payload, list) else payload.get("items", [])
-    printer.print_table(
-        "Scopes",
-        ["name", "description"],
-        [[item.get("name", ""), item.get("description", "")] for item in items],
-    )
-
+    app.printer.render_format(data, "json" if app.printer.json_output else output)

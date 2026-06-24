@@ -1,5 +1,4 @@
-from agentgrant.cli import cli
-
+from agentgrant.cli import main
 
 if __name__ == "__main__":
-    cli()
+    main()

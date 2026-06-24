@@ -1,10 +1,43 @@
 from __future__ import annotations
 
-from agentgrant.utils.http_client import AgentGrantClient
-from agentgrant.utils.printer import Printer
+import click
+
+from agentgrant.clients.api_client import APIClient
+from agentgrant.core.context import AppContext, pass_context
+from agentgrant.models.identity import Identity, IdentityListResponse
+from agentgrant.utils.formatter import to_serializable_list
 
 
-async def render_identity(client: AgentGrantClient, printer: Printer, identity_id: str) -> None:
-    payload = await client.get(f"/identities/{identity_id}")
-    printer.emit(payload, title=f"Identity {identity_id}")
+@click.group("identity")
+def identity_group() -> None:
+    """Identity operations."""
 
+
+@identity_group.command("get")
+@click.argument("identity_id")
+@pass_context
+def identity_get(app: AppContext, identity_id: str) -> None:
+    """Fetch one identity."""
+    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    payload = app.run(client.get(f"/identities/{identity_id}"))
+    identity = Identity.model_validate(payload)
+    app.printer.emit(identity.model_dump(mode="json"), title=f"Identity {identity_id}")
+
+
+@identity_group.command("list")
+@pass_context
+def identity_list(app: AppContext) -> None:
+    """List identities."""
+    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    payload = app.run(client.get("/identities"))
+    data = payload if isinstance(payload, dict) else {"items": payload}
+    identities = IdentityListResponse.model_validate(data)
+    rows = to_serializable_list(identities.items)
+    if app.printer.json_output:
+        app.printer.emit(rows, title="Identities")
+        return
+    app.printer.table(
+        "Identities",
+        ["id", "name", "email", "type"],
+        [[r["id"], r.get("name", ""), r.get("email", ""), r.get("type", "")] for r in rows],
+    )

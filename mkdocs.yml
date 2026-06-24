@@ -1,0 +1,7 @@
+site_name: AgentGrant CLI
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Usage: usage.md
+

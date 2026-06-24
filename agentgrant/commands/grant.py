@@ -1,36 +1,79 @@
 from __future__ import annotations
 
-from agentgrant.utils.http_client import AgentGrantClient
-from agentgrant.utils.printer import Printer
+import click
+
+from agentgrant.clients.api_client import APIClient
+from agentgrant.core.context import AppContext, pass_context
+from agentgrant.models.grant import Grant, GrantListResponse
+from agentgrant.utils.formatter import to_serializable_list
 
 
-async def render_grant_list(client: AgentGrantClient, printer: Printer) -> None:
-    payload = await client.get("/grants")
-    if printer.json_output:
-        printer.print_json(payload)
+@click.group("grant")
+def grant_group() -> None:
+    """Grant operations."""
+
+
+@grant_group.command("list")
+@click.option("--page", "page_number", default=1, show_default=True, type=int)
+@click.option("--limit", default=20, show_default=True, type=int)
+@click.option("--status", default=None)
+@click.option("--user", default=None)
+@pass_context
+def grant_list(
+    app: AppContext,
+    page_number: int,
+    limit: int,
+    status: str | None,
+    user: str | None,
+) -> None:
+    """List grants with filtering."""
+    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    params = {"page": page_number, "limit": limit}
+    if status:
+        params["status"] = status
+    if user:
+        params["user"] = user
+    payload = app.run(client.get("/grants", params=params))
+    if isinstance(payload, list):
+        response = GrantListResponse(
+            items=[Grant.model_validate(item) for item in payload],
+            page=page_number,
+            limit=limit,
+            total=len(payload),
+        )
+    else:
+        items = [Grant.model_validate(item) for item in payload.get("items", [])]
+        response = GrantListResponse(
+            items=items,
+            page=payload.get("page", page_number),
+            limit=payload.get("limit", limit),
+            total=payload.get("total", len(items)),
+        )
+    rows = to_serializable_list(response.items)
+    if app.printer.json_output:
+        app.printer.emit(response.model_dump(mode="json"), title="Grants")
         return
-
-    items = payload if isinstance(payload, list) else payload.get("items", [])
-    printer.print_table(
+    app.printer.table(
         "Grants",
         ["id", "subject", "scope", "status", "expires_at"],
         [
             [
-                item.get("id", ""),
-                item.get("subject", ""),
-                item.get("scope", ""),
-                item.get("status", ""),
-                item.get("expires_at", ""),
+                r["id"],
+                r.get("subject", ""),
+                r.get("scope", ""),
+                r.get("status", ""),
+                r.get("expires_at", ""),
             ]
-            for item in items
+            for r in rows
         ],
     )
 
 
-async def revoke_grant(client: AgentGrantClient, printer: Printer, grant_id: str) -> None:
-    payload = await client.delete(f"/grants/{grant_id}")
-    if printer.json_output:
-        printer.print_json(payload)
-        return
-    printer.print_message(f"Grant '{grant_id}' revoked successfully.")
-
+@grant_group.command("revoke")
+@click.argument("grant_id")
+@pass_context
+def grant_revoke(app: AppContext, grant_id: str) -> None:
+    """Revoke a grant."""
+    client = APIClient(app.settings.api_base_url, app.settings.api_key)
+    payload = app.run(client.delete(f"/grants/{grant_id}"))
+    app.printer.emit(payload, title=f"Grant {grant_id} revoked")

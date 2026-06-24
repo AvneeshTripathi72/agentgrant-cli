@@ -3,15 +3,15 @@ from __future__ import annotations
 from pydantic import BaseModel, HttpUrl
 
 
-class DocPage(BaseModel):
+class DocsPage(BaseModel):
     title: str
-    url: HttpUrl
     slug: str
+    url: HttpUrl
     description: str | None = None
+    content: str | None = None
 
 
-class SearchResult(BaseModel):
-    page: DocPage
-    score: int
+class DocsSearchResult(BaseModel):
+    page: DocsPage
+    score: float
     snippet: str
-

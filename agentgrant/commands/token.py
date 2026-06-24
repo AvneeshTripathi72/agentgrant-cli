@@ -1,55 +1,50 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+import click
 
-import jwt
-from jwt import PyJWTError
-
-from agentgrant.utils.config import PersistedConfig
-from agentgrant.utils.printer import Printer
+from agentgrant.core.context import AppContext, pass_context
+from agentgrant.core.exceptions import ConfigurationError
+from agentgrant.utils.jwt_utils import decode_token, verify_token
 
 
-def _read_token(token_input: str) -> str:
-    candidate = Path(token_input)
-    if candidate.exists():
-        return candidate.read_text(encoding="utf-8").strip()
-    return token_input.strip()
+@click.group("token")
+def token_group() -> None:
+    """Token operations."""
 
 
-def decode_token(token_input: str) -> dict[str, Any]:
-    token = _read_token(token_input)
-    try:
-        header = jwt.get_unverified_header(token)
-        claims = jwt.decode(token, options={"verify_signature": False, "verify_exp": False})
-    except PyJWTError as exc:
-        raise ValueError(f"Unable to decode token: {exc}") from exc
-    return {"header": header, "claims": claims}
+@token_group.command("decode")
+@click.argument("token_input")
+@pass_context
+def token_decode(app: AppContext, token_input: str) -> None:
+    """Decode a JWT without signature verification."""
+    payload = decode_token(token_input)
+    app.printer.emit(payload.model_dump(mode="json"), title="Decoded JWT")
 
 
-def verify_token(token_input: str, settings: PersistedConfig, secret: str | None = None) -> dict[str, Any]:
-    token = _read_token(token_input)
-    signing_key = secret or settings.jwt_secret
-    if not signing_key:
-        raise ValueError("A JWT secret is required. Provide --secret or set AGENTGRANT_JWT_SECRET.")
-
-    algorithm = settings.jwt_algorithm
-    try:
-        claims = jwt.decode(token, signing_key, algorithms=[algorithm])
-    except PyJWTError as exc:
-        raise ValueError(f"Token verification failed: {exc}") from exc
-    return {"valid": True, "algorithm": algorithm, "claims": claims}
-
-
-def render_decoded_token(printer: Printer, token_input: str) -> None:
-    printer.emit(decode_token(token_input), title="Decoded JWT")
-
-
-def render_verified_token(
-    printer: Printer,
+@token_group.command("verify")
+@click.argument("token_input")
+@click.option("--secret", default=None, help="JWT secret override.")
+@click.option("--issuer", default=None, help="Expected token issuer.")
+@click.option("--audience", default=None, help="Expected token audience.")
+@pass_context
+def token_verify(
+    app: AppContext,
     token_input: str,
-    settings: PersistedConfig,
-    secret: str | None = None,
+    secret: str | None,
+    issuer: str | None,
+    audience: str | None,
 ) -> None:
-    printer.emit(verify_token(token_input, settings, secret=secret), title="Verified JWT")
-
+    """Verify a JWT."""
+    signing_secret = secret or app.settings.jwt_secret
+    if not signing_secret:
+        raise ConfigurationError(
+            "A JWT secret is required. Use --secret or configure AGENTGRANT_JWT_SECRET."
+        )
+    payload = verify_token(
+        token_input,
+        secret=signing_secret,
+        algorithm=app.settings.jwt_algorithm,
+        issuer=issuer,
+        audience=audience,
+    )
+    app.printer.emit(payload.model_dump(mode="json"), title="Verified JWT")
